@@ -1,0 +1,17 @@
+{
+    "fname": "Joe",
+    "lname": "Fonebone",
+    "age": 51,
+    "spouse": "Edna",
+    "children": [
+        "Ralph",
+        "Betty",
+        "Joey"
+    ],
+    "pets": {
+        "dog": "Fido",
+        "cat": "Sox"
+    },
+    "married": true,
+    "girlfriend": null
+}
