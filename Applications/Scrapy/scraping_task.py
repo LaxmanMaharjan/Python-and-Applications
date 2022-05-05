@@ -2,6 +2,10 @@ import scrapy
 import json
 from scrapy.crawler import CrawlerProcess
 
+from scrapy.spidermiddlewares.httperror import HttpError
+from twisted.internet.error import DNSLookupError
+from twisted.internet.error import TimeoutError, TCPTimedOutError
+
 class AnnapurnaPostSpider(scrapy.Spider):
     name = "AnnapurnaPost"
     base_url = "https://bg.annapurnapost.com/api/search?title=%E0%A4%96%E0%A5%87%E0%A4%B2%E0%A4%95%E0%A5%81%E0%A4%A6"
@@ -38,11 +42,36 @@ class AnnapurnaPostSpider(scrapy.Spider):
         information ={'data':self.posts, 'len':len(self.posts['data'])}
         yield information
         
+        #urls = ["http://www.httpbin.org/status/404",self.base_url+f"&page=2"]
         for page in range(1,totalpage+1):
+        #for url in urls:
             url = self.base_url + f"&page={page}"
-            request = scrapy.Request(url=url, headers=self.headers, callback= self.parse)
+            request = scrapy.Request(url=url, headers=self.headers, callback= self.parse,errback=self.errback_httpbin)
+            #request = scrapy.Request(url=url, headers=self.headers, callback= self.parse,)
+
             yield request
 
+    def errback_httpbin(self, failure):
+        # log all failures
+        self.logger.error(repr(failure))
+
+        # in case you want to do something special for some errors,
+        # you may need the failure's type:
+
+        if failure.check(HttpError):
+            # these exceptions come from HttpError spider middleware
+            # you can get the non-200 response
+            response = failure.value.response
+            self.logger.error('HttpError on %s', response.url)
+
+        elif failure.check(DNSLookupError):
+            # this is the original request
+            request = failure.request
+            self.logger.error('DNSLookupError on %s', request.url)
+
+        elif failure.check(TimeoutError, TCPTimedOutError):
+            request = failure.request
+            self.logger.error('TimeoutError on %s', request.url)
 
 
 if __name__=='__main__':
