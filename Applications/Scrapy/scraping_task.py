@@ -1,5 +1,6 @@
 import scrapy
 import json
+import csv
 from scrapy.crawler import CrawlerProcess
 
 from scrapy.spidermiddlewares.httperror import HttpError
@@ -16,6 +17,8 @@ class AnnapurnaPostSpider(scrapy.Spider):
 
     posts = {'data':[]}
 
+    urls_dicts = []
+
     # crawler's entry point
     def start_requests(self):
         yield scrapy.Request(
@@ -24,7 +27,21 @@ class AnnapurnaPostSpider(scrapy.Spider):
             callback = self.parse
         )
     
+    def load_csv(self):
+        urls_dicts = []
+        urls = []
+        with open('urls.csv') as file:
+            for line in csv.DictReader(file):
+                self.urls_dicts.append(line)
+        for url_dict in self.urls_dicts:
+            urls.append(url_dict['urls'])
+
+        return urls
+
     def parse(self, response):
+        
+        urls = self.load_csv()
+
         data = json.loads(response.body)
         items = data['data']['items']
 
@@ -46,10 +63,18 @@ class AnnapurnaPostSpider(scrapy.Spider):
         for page in range(1,totalpage+1):
         #for url in urls:
             url = self.base_url + f"&page={page}"
-            request = scrapy.Request(url=url, headers=self.headers, callback= self.parse,errback=self.errback_httpbin)
+            if url in urls:
+                continue
+            else:
+                self.urls_dicts.append({'urls':url})
+                with open('urls.csv','a') as file:
+                    writer = csv.DictWriter(file, fieldnames=['urls'])
+                    writer.writerow({'urls':url})
+
+                request = scrapy.Request(url=url, headers=self.headers, callback= self.parse,errback=self.errback_httpbin)
             #request = scrapy.Request(url=url, headers=self.headers, callback= self.parse,)
 
-            yield request
+                yield request
 
     def errback_httpbin(self, failure):
         # log all failures
