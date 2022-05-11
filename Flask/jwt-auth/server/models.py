@@ -1,0 +1,80 @@
+from flask.json import jsonify
+import jwt
+
+from jwt import PyJWKClient
+from datetime import datetime, timedelta
+
+from jwt import jwks_client
+from . import app, db, bcrypt
+
+from cryptography.hazmat.primitives import serialization
+from cryptography.x509 import load_pem_x509_certificate
+
+class User(db.Model):
+    """User model for storing necessary credentials"""
+    __tablename__ = "users"
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(255), nullable=False)
+    number = db.Column(db.String(10), nullable=False)
+    email = db.Column(db.String(255), unique=True, nullable=False)
+    password = db.Column(db.String(255), nullable=False)
+    location = db.Column(db.String(255), nullable=False)
+    registered_on = db.Column(db.DateTime, nullable=False)
+
+    def __init__(self, name, number, email, password, location):
+        self.email = email
+        self.name = name
+        self.password = bcrypt.generate_password_hash(password, app.config.get('BCRYPT_LOG_ROUNDS')).decode()
+        self.location = location
+        self.number = number    
+        self.registered_on = datetime.now()
+
+    def encode_auth_token(self, user_id):
+        now = datetime.utcnow()
+
+        try:
+            payload ={
+                    'iat': now,
+                    'exp': (now + timedelta(hours=10)).timestamp(),
+                    'sub': user_id
+                    }
+            with open('server/Keys/private_key.pem','r') as file:
+                private_key_text = file.read()
+    
+            private_key = serialization.load_pem_private_key(
+                private_key_text.encode(), password=None
+            )
+            return jwt.encode(payload=payload, key=private_key, algorithm="RS256")
+        except Exception as e:
+            return e
+        
+
+    @staticmethod
+    def decode_auth_token(token):
+        try:
+            unverified_headers = jwt.get_unverified_header(token)
+            #with open("server/Keys/public_key.pem", 'r') as file:
+            #    public_key_text = file.read()
+
+            #public_key = load_pem_x509_certificate(public_key_text.encode()).public_key()
+            url = "http://localhost:5000/public/.well-known/jwks.json"
+            jwks_client = PyJWKClient(url)
+            signing_key = jwks_client.get_signing_key_from_jwt(token)
+    
+            payload = jwt.decode(
+                token,
+                #key=public_key,
+                key=signing_key.key,
+                algorithms = unverified_headers["alg"]
+                )
+            return payload['sub']
+        
+        except jwt.ExpiredSignatureError:
+            return "Signature expired. Please login again"
+
+        except jwt.InvalidTokenError:
+            return "Invalid token. Please login again"
+
+        except FileNotFoundError:
+            return "Public key file not found"
+
