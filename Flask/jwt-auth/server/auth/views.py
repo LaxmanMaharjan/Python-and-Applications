@@ -87,8 +87,7 @@ class UserAPI(MethodView):
     def get(self):
         # get the auth token
         auth_header = request.headers.get('Authorization')
-        print(auth_header)
-        print("type of auth header",type(auth_header))
+
         if auth_header:
             try:
                 auth_token = auth_header.split(" ")[1]
@@ -102,16 +101,16 @@ class UserAPI(MethodView):
             auth_token = ''
         if auth_token:
             resp = User.decode_auth_token(auth_token)
-            print(resp)
-            print(type(resp))
             if not isinstance(resp, str):
-                print('from instance')
-                print(resp)
+                #print('from instance')
+                #print(resp)
                 user = User.query.filter_by(id=resp).first()
                 responseObject = {
                     'status': 'success',
                     'data': {
                         'user_id': user.id,
+                        'name': user.name,
+                        'number': user.number,
                         'email': user.email,
                         'location': user.location
                     }
@@ -158,7 +157,7 @@ auth_blueprint.add_url_rule(
         )
 
 auth_blueprint.add_url_rule(
-        "/auth/profile",
+        "/profile/detail",
         view_func=user_view,
         methods = ['GET']
         )

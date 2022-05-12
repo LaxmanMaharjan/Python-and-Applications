@@ -1,5 +1,7 @@
-from flask.json import jsonify
 import jwt
+import requests
+
+from flask.json import jsonify
 
 from jwt import PyJWKClient
 from datetime import datetime, timedelta
@@ -38,7 +40,7 @@ class User(db.Model):
                     'exp': (now + timedelta(hours=10)).timestamp(),
                     'sub': user_id
                     }
-            with open('server/Keys/private_key.pem','r') as file:
+            with open('server/keys/private_key.pem','r') as file:
                 private_key_text = file.read()
     
             private_key = serialization.load_pem_private_key(
@@ -52,19 +54,35 @@ class User(db.Model):
     @staticmethod
     def decode_auth_token(token):
         try:
+            print("entering decode")
             unverified_headers = jwt.get_unverified_header(token)
-            #with open("server/Keys/public_key.pem", 'r') as file:
-            #    public_key_text = file.read()
+            with open("server/keys/public_key.pem", 'r') as file:
+                public_key_text = file.read()
 
             #public_key = load_pem_x509_certificate(public_key_text.encode()).public_key()
-            url = "http://localhost:5000/public/.well-known/jwks.json"
-            jwks_client = PyJWKClient(url)
-            signing_key = jwks_client.get_signing_key_from_jwt(token)
+
+        
+            #jwks_client = PyJWKClient(url)
+            #signing_key = jwks_client.get_signing_key_from_jwt(token)
     
+            # using jwks
+            #url = "http://localhost:5000/public/.well-known/jwks.json"
+            #print(url)
+            #public_keys = requests.get(url=url).json()
+            #print("request successfull",public_keys)
+            #jwk = public_keys["keys"][0]
+
+            #print("jwk",jwk)
+
+            #public_key = jwt.algorithms.RSAAlgorithms.from_jwk(jwk)
+
+            #print(public_key)
+            public_key = public_key_text.encode()
+
             payload = jwt.decode(
                 token,
-                #key=public_key,
-                key=signing_key.key,
+                key=public_key,
+                #key=signing_key.key,
                 algorithms = unverified_headers["alg"]
                 )
             return payload['sub']
