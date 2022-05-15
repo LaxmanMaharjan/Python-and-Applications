@@ -10,7 +10,7 @@ def generate_jwt():
             'iat': datetime.utcnow(),
             'exp': (now + timedelta(hours=10)).timestamp()
             }
-    with open('./Keys/private_key.pem','r') as file:
+    with open('./keys/private_key.pem','r') as file:
         private_key_text = file.read()
 
 
