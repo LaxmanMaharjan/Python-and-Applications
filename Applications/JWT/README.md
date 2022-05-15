@@ -5,8 +5,3 @@
 - [X.509](https://www.appviewx.com/education-center/what-is-x-509-standard/#:~:text=509%20Standard%3F-,X.,offline%20applications%2C%20like%20electronic%20signatures.) - X.509 Certificate  
 
 
-
-```sh
-cd dillinger
-docker build -t <youruser>/dillinger:${package.json.version} .
-```
