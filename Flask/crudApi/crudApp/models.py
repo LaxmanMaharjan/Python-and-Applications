@@ -1,4 +1,4 @@
-from crudApp import db
+from crudApi import db
 
 class User(db.Document):
     user_id = db.StringField(required=True,unique=True)

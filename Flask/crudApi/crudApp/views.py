@@ -3,18 +3,23 @@ from flask.views import MethodView
 from crudApp.serializers import UserSchema
 from crudApp.models import User
 
-from crudApp import app
+from crudApi import app, docs
+from flask_apispec import marshal_with
+from flask_apispec import MethodResource
 
-crud_blueprint = Blueprint('crud',__name__)
 
-class CreateView(MethodView):
+# crud_blueprint = Blueprint('crud',__name__)
+
+class CreateView(MethodResource):
     """Performing CRUD in user"""
 
+    @marshal_with(UserSchema(many=True), code=200)
     def get(self):
         try:
             users = User.objects.all()
-            result = UserSchema(many=True).dump(users)
-            return make_response(jsonify(result)), 200
+            return users
+            # result = UserSchema(many=True).dump(users)
+            # return make_response(jsonify(result)), 200
 
         except Exception as e:
             print(e.__class__)
@@ -96,20 +101,23 @@ class UpdateDeleteView(MethodView):
 
 
 
-create_view = CreateView.as_view('create_api')
-modification_view = UpdateDeleteView.as_view('modification_api')
+# create_view = CreateView.as_view('create_api')
+# modification_view = UpdateDeleteView.as_view('modification_api')
 
-crud_blueprint.add_url_rule(
-        "/crud/",
-        view_func=create_view,
-        methods = ["GET","POST"]
-        )
-crud_blueprint.add_url_rule(
-        "/crud/<string:id>",
-        view_func=modification_view,
-        methods = ["PUT","DELETE"]
-        )
+# crud_blueprint.add_url_rule(
+#         "/crud/",
+#         view_func=create_view,
+#         methods = ["GET","POST"]
+#         )
+# crud_blueprint.add_url_rule(
+#         "/crud/<string:id>",
+#         view_func=modification_view,
+#         methods = ["PUT","DELETE"]
+#         )
 
+app.add_url_rule('/crud', view_func=CreateView.as_view('crud'))
+
+docs.register(CreateView)
 
 @app.route('/populate',methods=["POST"])
 def populate():
